@@ -8,7 +8,7 @@ Convert pdf files to images/video
 
 OPTIONs
  -h, --help                       show this help manuel
- -r, --recompile-dependencies     recompile dependencies
+ -i, --install-dependencies       install dependencies
   
 EOF
   exit 0
@@ -16,9 +16,9 @@ EOF
 
 scriptRepo=$(dirname "$0")
 currentDirectry=$PWD
-recompileDependencies=false;
+installDependencies=false;
 
-OPTS=$(getopt -o hr --long help,recompile-dependencies -n 'parse-options' -- "$@")
+OPTS=$(getopt -o hi --long help,install-dependencies -n 'parse-options' -- "$@")
 if [ $? != 0 ]; then
   echo "Failed parsing options." >&2; exit 1
 fi
@@ -28,8 +28,8 @@ while true; do
   case "$1" in
     -h | --help )
       usage; shift ;;
-    -r | --recompile-dependencies )
-      recompileDependencies=true; shift ;;
+    -i | --install-dependencies )
+      installDependencies=true; shift ;;
     -- )
       shift; break ;;
     * )
@@ -37,10 +37,12 @@ while true; do
   esac
 done
 
-if [ "$recompileDependencies" = "true" ]; then
-  echo "recomile dependencies..."
+if [ "$installDependencies" = "true" ]; then
+  echo "install dependencies..."
   cd $scriptRepo
   mvn clean install > /dev/null
+  cd images-to-video
+  npm install > /dev/null
   cd $currentDirectry
 fi
 
@@ -50,4 +52,6 @@ find . -type f ! -name '*.pdf' -delete
 for pdf in *.pdf; do
   echo "convert $pdf to images..."
   java -jar "$scriptRepo/pdf-to-images/dist/standalone.jar" "$pdf"
+  echo "convert images to video..."
+  node "$scriptRepo/images-to-video/index.js" "$currentDirectry"
 done
